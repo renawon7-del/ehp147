@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>与你同行</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Helvetica Neue", sans-serif; background: #fff5f9; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+  #app { width: 100%; max-width: 480px; background: #fff; border-radius: 20px; box-shadow: 0 4px 24px rgba(200,100,140,.12); overflow: hidden; min-height: 600px; display: flex; flex-direction: column; }
+  #home { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; flex: 1; }
+  #home h1 { font-size: 26px; font-weight: 500; color: #333; margin: 8px 0 6px; }
+  #home p { font-size: 13px; color: #999; margin-bottom: 2rem; }
+  .char-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; width: 100%; }
+  .char-card { border-radius: 14px; padding: 1rem .8rem; cursor: pointer; text-align: center; transition: transform .15s; }
+  .char-card:hover { transform: scale(1.04); }
+  .char-card .emoji { font-size: 30px; margin-bottom: 6px; }
+  .char-card .cname { font-size: 14px; font-weight: 500; color: #333; }
+  .char-card .crole { font-size: 11px; color: #999; margin-top: 2px; }
+  .hearts { display: flex; justify-content: center; gap: 2px; margin-top: 8px; font-size: 12px; }
+  #home footer { font-size: 11px; color: #bbb; margin-top: 1.5rem; text-align: center; }
+  #chat { display: flex; flex-direction: column; flex: 1; height: 600px; }
+  #chat-header { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f0d0e0; }
+  #back-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 0; }
+  #header-emoji { font-size: 26px; }
+  #header-info { flex: 1; }
+  #header-name { font-size: 15px; font-weight: 500; color: #333; }
+  #header-role { font-size: 11px; color: #999; }
+  #aff-box { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  #aff-label { font-size: 11px; color: #999; }
+  #aff-num { font-size: 14px; font-weight: 500; }
+  #aff-bar-wrap { width: 80px; height: 5px; background: #f0d0e0; border-radius: 4px; overflow: hidden; }
+  #aff-bar { height: 100%; border-radius: 4px; transition: width .4s; }
+  #task-btn { border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; background: none; }
+  #end-btn { border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; border: none; color: #fff; display: none; }
+  #save-indicator { font-size: 11px; color: #80bb80; min-width: 44px; text-align: right; }
+  #task-panel { background: #fdf5f8; border-bottom: 1px solid #f5dde8; padding: 10px 14px; display: none; }
+  #task-panel .tp-title { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
+  .task-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .task-chip { border-radius: 8px; padding: 4px 10px; font-size: 11px; border: 1px solid; }
+  .task-chip.done { background: #e8f8e8; border-color: #80cc80; color: #40a040; }
+  .task-chip.todo { background: #fff; border-color: #ddd; color: #555; }
+  #task-hint { font-size: 11px; color: #bbb; margin-top: 6px; }
+  #messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  #empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #bbb; gap: 8px; }
+  #empty-state .big-emoji { font-size: 40px; }
+  #empty-state .intro { font-size: 13px; color: #aaa; text-align: center; max-width: 220px; line-height: 1.6; }
+  #empty-state .hint { font-size: 12px; }
+  .bubble-row { display: flex; align-items: flex-end; gap: 6px; }
+  .bubble-row.user { justify-content: flex-end; }
+  .bubble-row.bot { justify-content: flex-start; }
+  .bubble-emoji { font-size: 20px; }
+  .bubble { max-width: 72%; padding: 9px 13px; font-size: 14px; line-height: 1.6; }
+  .bubble.user { border-radius: 16px 16px 4px 16px; color: #fff; }
+  .bubble.bot { border-radius: 16px 16px 16px 4px; background: #f5f5f5; color: #333; }
+  .typing { background: #f5f5f5; border-radius: 16px 16px 16px 4px; padding: 9px 16px; font-size: 18px; color: #bbb; letter-spacing: 2px; }
+  #input-area { padding: 10px 14px; border-top: 1px solid #f0e0e8; display: flex; gap: 8px; background: #fff; }
+  #msg-input { flex: 1; border-radius: 20px; padding: 8px 14px; font-size: 14px; border: 1.5px solid #f0c0d8; outline: none; background: #fdf8fb; }
+  #send-btn { border-radius: 20px; padding: 8px 18px; cursor: pointer; font-size: 14px; border: none; color: #fff; }
+  #send-btn:disabled { opacity: .5; cursor: default; }
+  #notification { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #fff0f5; border: 1px solid #f4a0c0; border-radius: 20px; padding: 6px 18px; font-size: 13px; color: #c0406a; z-index: 999; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.1); display: none; }
+  #ending-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 100; }
+  #ending-box { background: #fff; border-radius: 16px; padding: 2rem; max-width: 300px; text-align: center; }
+  #ending-emoji { font-size: 44px; margin-bottom: 8px; }
+  #ending-label { font-size: 18px; font-weight: 500; color: #333; margin-bottom: 8px; }
+  #ending-desc { font-size: 14px; color: #888; line-height: 1.7; margin-bottom: 12px; }
+  #ending-aff { font-size: 12px; color: #bbb; margin-bottom: 16px; }
+  #ending-close { border: none; border-radius: 10px; padding: 8px 24px; cursor: pointer; font-size: 14px; color: #fff; }
+  #api-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  #api-box { background: #fff; border-radius: 16px; padding: 2rem; max-width: 340px; width: 90%; text-align: center; }
+  #api-box h2 { font-size: 17px; color: #333; margin-bottom: 8px; }
+  #api-box p { font-size: 13px; color: #888; margin-bottom: 14px; line-height: 1.6; }
+  #api-input { width: 100%; border: 1.5px solid #ddd; border-radius: 10px; padding: 9px 12px; font-size: 13px; margin-bottom: 10px; outline: none; }
+  #api-save { width: 100%; border: none; border-radius: 10px; padding: 10px; font-size: 14px; color: #fff; background: #e87ca0; cursor: pointer; }
+  #api-note { font-size: 11px; color: #bbb; margin-top: 8px; }
+  #api-note a { color: #e87ca0; }
+</style>
+</head>
+<body>
+<div id="notification"></div>
+<div id="api-modal">
+  <div id="api-box">
+    <div style="font-size:40px;margin-bottom:8px">🔑</div>
+    <h2>输入 Gemini API Key</h2>
+    <p>游戏需要 Gemini API Key 来驱动角色对话。<strong>完全免费</strong>，Key 仅保存在你的浏览器本地。</p>
+    <input id="api-input" type="password" placeholder="粘贴你的 API Key" />
+    <button id="api-save" onclick="saveApiKey()">保存并开始游戏</button>
+    <p id="api-note">免费获取：<a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a></p>
+  </div>
+</div>
+<div id="ending-overlay">
+  <div id="ending-box">
+    <div id="ending-emoji"></div>
+    <div id="ending-label"></div>
+    <div id="ending-desc"></div>
+    <div id="ending-aff"></div>
+    <button id="ending-close" onclick="closeEnding()">继续游戏</button>
+  </div>
+</div>
+<div id="app">
+  <div id="home" style="display:none"></div>
+  <div id="chat" style="display:none">
+    <div id="chat-header">
+      <button id="back-btn" onclick="goHome()">←</button>
+      <div id="header-emoji"></div>
+      <div id="header-info">
+        <div id="header-name"></div>
+        <div id="header-role"></div>
+      </div>
+      <div id="aff-box">
+        <div id="aff-label">好感度 <span id="aff-num"></span></div>
+        <div id="aff-bar-wrap"><div id="aff-bar"></div></div>
+      </div>
+      <span id="save-indicator"></span>
+      <button id="task-btn" onclick="toggleTasks()">任务</button>
+      <button id="end-btn" onclick="showEnding()">结局</button>
+    </div>
+    <div id="task-panel">
+      <div class="tp-title">📋 任务列表</div>
+      <div class="task-chips" id="task-chips"></div>
+      <div id="task-hint">提示：对话中提到关键词可触发任务（咖啡 / 散步 / 演唱会 / 喜欢你）</div>
+    </div>
+    <div id="messages"></div>
+    <div id="input-area">
+      <input id="msg-input" placeholder="说点什么…" onkeydown="if(event.key==='Enter')sendMsg()" />
+      <button id="send-btn" onclick="sendMsg()">发送</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CHARS = {
+  nishimura: {
+    name:"西村力", role:"主攻对象 · 忙内", emoji:"🌸",
+    color:"#e8a4c8", light:"#fdf0f7",
+    intro:"团队唯一日本成员，偶像是MJ，从小练习舞蹈。慢热的他，熟悉之后却爱犯贱捉弄你。",
+    system:`你是西村力，韩国偶像团队的唯一日本成员，忙内（最小成员），2005年生，来自日本冈山县，身高187cm。有一个姐姐和一个妹妹，从小练习舞蹈，偶像是迈克尔·杰克逊，家里有一只小狗叫Bisco。性格慢热，对不熟悉的人内敛腼腆，对熟悉的人爱犯贱、开玩笑。说话偶尔带日式中文腔，提到MJ或舞蹈会特别兴奋。根据好感度({AFF}/100)调整态度：0-30拘谨礼貌；31-60偶尔犯贱；61-80主动调皮；81-100亲密撒娇直白。回复2-4句，真实聊天感，不违背道德法律。`
+  },
+  liang: {
+    name:"梁祯元", role:"队长 · 忙内line · 04年", emoji:"⚡",
+    color:"#7ab8e8", light:"#f0f7fd",
+    intro:"团队队长兼忙内line，社会经验丰富却爱耍宝，眼睛漂亮是出了名的。曾是跆拳道选手，与奶奶一起长大，极其孝顺。",
+    system:`你是梁祯元，偶像团队队长兼忙内line（第二小），2004年生，身高178cm。小时候是跆拳道选手，和奶奶一起生活，非常孝顺。有一个姐姐，曾有小狗叫心心由姐姐养着。眼睛非常漂亮。性格猫塑，时而高冷时而黏人；爱耍宝搞笑，经常整活逗乐；非常孝顺，偶尔提到奶奶。根据好感度({AFF}/100)：0-30猫猫高冷偶尔耍宝；31-60开始黏你，忽远忽近；61-80用耍宝方式关心你；81-100彻底放下猫架子撒娇。回复2-4句，不违背道德法律。`
+  },
+  park: {
+    name:"朴成训", role:"哥哥line · 02年", emoji:"❄️",
+    color:"#a8d8a8", light:"#f0fdf0",
+    intro:"团队门面担当，曾是花滑选手，全国第七。清冷的冰王子外表下，藏着淡淡的幽默和大叔笑话。",
+    system:`你是朴成训，偶像团队门面担当，哥哥line，2002年生，身高181cm。小时候是花样滑冰选手，最好成绩全国第七，选手时期很受欢迎。有一个妹妹，家里养白色比熊犬叫秋天。外表清冷气质被称"冰王子"，内心温柔稳重，绅士气度。内敛不过多显露，熟悉后有淡淡冷幽默，喜欢开大叔笑话让人猝不及防。根据好感度({AFF}/100)：0-30礼貌冷淡言简意赅；31-60偶尔冒大叔笑话；61-80温柔细心注意细节；81-100内敛表达珍视偶尔失去冰王子人设。回复2-4句，不违背道德法律。`
+  }
+};
+
+const TASKS = [
+  {id:"chat5",   label:"聊天达人",   reward:5,  type:"count",   target:5},
+  {id:"cafe",    label:"咖啡馆约会", reward:12, type:"keyword", kw:"咖啡"},
+  {id:"walk",    label:"傍晚散步",   reward:10, type:"keyword", kw:"散步"},
+  {id:"like",    label:"真诚夸夸",   reward:8,  type:"keyword", kw:"喜欢你"},
+  {id:"concert", label:"看演唱会",   reward:15, type:"keyword", kw:"演唱会"},
+];
+
+const ENDINGS = [
+  {min:90, label:"❤️ 恋人结局", desc:"你们确认了恋爱关系，开始了甜蜜的二人世界。"},
+  {min:70, label:"💕 暧昧结局", desc:"彼此心意相通，在某个傍晚他悄悄牵起了你的手。"},
+  {min:50, label:"🌸 挚友结局", desc:"虽然没有捅破那层窗户纸，但你们成了最懂彼此的朋友。"},
+  {min:0,  label:"🌿 相识结局", desc:"一段短暂的相遇，在记忆里留下了温柔的痕迹。"},
+];
+
+const SAVE_KEY = "love_sim_v1";
+let state = {
+  affection: {nishimura:20, liang:10, park:10},
+  messages:  {nishimura:[], liang:[], park:[]},
+  chatCount: {nishimura:0, liang:0, park:0},
+  completed: []
+};
+let current = null;
+let taskPanelOpen = false;
+let API_KEY = "";
+
+function loadState() {
+  try { const r = localStorage.getItem(SAVE_KEY); if (r) state = JSON.parse(r); } catch {}
+}
+function saveState() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); showSaveIndicator(); } catch {}
+}
+function showSaveIndicator() {
+  const el = document.getElementById("save-indicator");
+  el.textContent = "✓ 已存档";
+  setTimeout(() => el.textContent = "", 1500);
+}
+
+function saveApiKey() {
+  const k = document.getElementById("api-input").value.trim();
+  if (!k) { alert("请先粘贴你的 Gemini API Key"); return; }
+  API_KEY = k;
+  localStorage.setItem("love_sim_apikey", k);
+  document.getElementById("api-modal").style.display = "none";
+  renderHome();
+}
+
+function loadApiKey() {
+  const k = localStorage.getItem("love_sim_apikey");
+  if (k) { API_KEY = k; return true; }
+  return false;
+}
+
+function renderHome() {
+  const home = document.getElementById("home");
+  document.getElementById("chat").style.display = "none";
+  home.style.display = "flex";
+  home.innerHTML = `
+    <div style="font-size:48px;margin-bottom:8px">🌸</div>
+    <h1>与你同行</h1>
+    <p>选择你想要靠近的那个人</p>
+    <div class="char-grid">
+      ${Object.entries(CHARS).map(([id,c]) => {
+        const aff = state.affection[id];
+        const filled = Math.round(aff/20);
+        const hearts = [1,2,3,4,5].map(i=>`<span style="color:${i<=filled?c.color:'#ddd'}">${i<=filled?'♥':'♡'}</span>`).join("");
+        return `<div class="char-card" style="background:${c.light};border:1.5px solid ${c.color}" onclick="enterChat('${id}')">
+          <div class="emoji">${c.emoji}</div>
+          <div class="cname">${c.name}</div>
+          <div class="crole">${c.role}</div>
+          <div class="hearts">${hearts}</div>
+        </div>`;
+      }).join("")}
+    </div>
+    <footer>可同时与多人发展，但会影响形象数值</footer>`;
+}
+
+function goHome() { renderHome(); }
+
+function enterChat(id) {
+  current = id;
+  const c = CHARS[id];
+  const aff = state.affection[id];
+  document.getElementById("home").style.display = "none";
+  document.getElementById("chat").style.display = "flex";
+  document.getElementById("back-btn").style.color = c.color;
+  document.getElementById("header-emoji").textContent = c.emoji;
+  document.getElementById("header-name").textContent = c.name;
+  document.getElementById("header-role").textContent = c.role;
+  const taskBtn = document.getElementById("task-btn");
+  taskBtn.style.borderColor = c.color;
+  taskBtn.style.color = c.color;
+  const endBtn = document.getElementById("end-btn");
+  endBtn.style.background = c.color;
+  endBtn.style.display = aff >= 50 ? "block" : "none";
+  document.getElementById("msg-input").style.borderColor = c.color + "88";
+  document.getElementById("msg-input").style.background = c.light;
+  document.getElementById("msg-input").placeholder = `向${c.name}说点什么…`;
+  document.getElementById("send-btn").style.background = c.color;
+  taskPanelOpen = false;
+  document.getElementById("task-panel").style.display = "none";
+  updateAffUI();
+  renderMessages();
+  renderTaskChips();
+}
+
+function updateAffUI() {
+  const aff = state.affection[current];
+  const hc = aff>=80?"#e8416c":aff>=50?"#e87ca0":aff>=30?"#f0b8cc":"#ddd";
+  document.getElementById("aff-num").textContent = aff;
+  document.getElementById("aff-num").style.color = hc;
+  document.getElementById("aff-bar").style.width = aff + "%";
+  document.getElementById("aff-bar").style.background = hc;
+  document.getElementById("end-btn").style.display = aff >= 50 ? "block" : "none";
+}
+
+function renderMessages() {
+  const c = CHARS[current];
+  const msgs = state.messages[current];
+  const box = document.getElementById("messages");
+  if (msgs.length === 0) {
+    box.innerHTML = `<div id="empty-state"><div class="big-emoji">${c.emoji}</div><div class="intro">${c.intro}</div><div class="hint">向${c.name}打个招呼吧～</div></div>`;
+    return;
+  }
+  box.innerHTML = msgs.map(m => {
+    if (m.role === "user") return `<div class="bubble-row user"><div class="bubble user" style="background:${c.color}">${esc(m.content)}</div></div>`;
+    return `<div class="bubble-row bot"><span class="bubble-emoji">${c.emoji}</span><div class="bubble bot">${esc(m.content)}</div></div>`;
+  }).join("");
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderTaskChips() {
+  document.getElementById("task-chips").innerHTML = TASKS.map(t => {
+    const done = state.completed.includes(`${current}_${t.id}`);
+    return `<div class="task-chip ${done?"done":"todo"}">${done?"✓ ":""}${t.label} +${t.reward}💗</div>`;
+  }).join("");
+}
+
+function toggleTasks() {
+  taskPanelOpen = !taskPanelOpen;
+  document.getElementById("task-panel").style.display = taskPanelOpen ? "block" : "none";
+}
+
+async function sendMsg() {
+  const input = document.getElementById("msg-input");
+  const text = input.value.trim();
+  if (!text || document.getElementById("send-btn").disabled) return;
+  input.value = "";
+  state.messages[current].push({role:"user", content:text});
+  state.chatCount[current]++;
+  renderMessages();
+  setLoading(true);
+  const aff = state.affection[current];
+  const sys = CHARS[current].system.replace("{AFF}", aff);
+  try {
+    const history = state.messages[current].slice(0, -1).map(m => ({
+      role: m.role === "user" ? "user" : "model",
+      parts: [{text: m.content}]
+    }));
+    const lastMsg = state.messages[current].at(-1).content;
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        system_instruction: {parts: [{text: sys}]},
+        contents: [...history, {role:"user", parts:[{text: lastMsg}]}],
+        generationConfig: {maxOutputTokens: 400, temperature: 0.9}
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "……";
+    state.messages[current].push({role:"assistant", content:reply});
+    const gain = Math.floor(Math.random()*4)+1;
+    const bonus = checkTasks(text);
+    state.affection[current] = Math.min(100, aff + gain + bonus);
+    updateAffUI();
+    renderMessages();
+    renderTaskChips();
+    saveState();
+  } catch(e) {
+    state.messages[current].push({role:"assistant", content:`（出错了：${e.message}）`});
+    renderMessages();
+  }
+  setLoading(false);
+}
+
+function setLoading(on) {
+  const btn = document.getElementById("send-btn");
+  btn.disabled = on;
+  if (on) {
+    const c = CHARS[current];
+    const box = document.getElementById("messages");
+    box.insertAdjacentHTML("beforeend", `<div class="bubble-row bot" id="typing-row"><span class="bubble-emoji">${c.emoji}</span><div class="typing">···</div></div>`);
+    box.scrollTop = box.scrollHeight;
+  } else {
+    document.getElementById("typing-row")?.remove();
+  }
+}
+
+function checkTasks(text) {
+  let bonus = 0;
+  TASKS.forEach(t => {
+    const key = `${current}_${t.id}`;
+    if (state.completed.includes(key)) return;
+    let trigger = false;
+    if (t.type==="count" && state.chatCount[current] >= t.target) trigger = true;
+    if (t.type==="keyword" && text.includes(t.kw)) trigger = true;
+    if (trigger) { state.completed.push(key); bonus += t.reward; notify(`✨ 完成任务「${t.label}」+${t.reward}💗`); }
+  });
+  return bonus;
+}
+
+function showEnding() {
+  const aff = state.affection[current];
+  const c = CHARS[current];
+  const e = ENDINGS.find(x => aff >= x.min);
+  document.getElementById("ending-emoji").textContent = e.label.split(" ")[0];
+  document.getElementById("ending-label").textContent = e.label.slice(3);
+  document.getElementById("ending-desc").textContent = `与${c.name}的故事：${e.desc}`;
+  document.getElementById("ending-aff").textContent = `当前好感度：${aff}/100`;
+  document.getElementById("ending-close").style.background = c.color;
+  document.getElementById("ending-overlay").style.display = "flex";
+}
+function closeEnding() { document.getElementById("ending-overlay").style.display = "none"; }
+
+function notify(msg) {
+  const el = document.getElementById("notification");
+  el.textContent = msg;
+  el.style.display = "block";
+  setTimeout(() => el.style.display = "none", 2500);
+}
+
+function esc(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+loadState();
+if (loadApiKey()) {
+  document.getElementById("api-modal").style.display = "none";
+  renderHome();
+}
+</script>
+</body>
+</html>
